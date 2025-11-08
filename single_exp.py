@@ -39,7 +39,7 @@ TAKE_REAL = False       # Set to True to take real part of output; False for com
 
 # SSM size and sequence/batch config
 N = 1                    # dimension of the SSM (number of eigenvalues on diagonal)
-SEQ_LEN = 256            # sequence length per batch
+SEQ_LEN = 64            # sequence length per batch
 BATCH_SIZE = 512          # number of sequences per batch
 SHIFT_SIZE = 0           # how many steps to shift target to the right
 
@@ -64,7 +64,7 @@ INIT_RADII  = [0.9] * N
 INIT_ANGLES = [ -math.pi, ]  # spread around unit circle
 
 # Logging / saving
-BASE_PATH = "./ssm_experiments"  # results root
+BASE_PATH = "./ssm_experiments_single"  # results root
 RUN_NAME_PREFIX = "shift_task"
 
 # ---------------------------
@@ -1122,7 +1122,7 @@ def run_experiment(
 # Example run - edit these parameters easily:
 loss_threshold = 1e-2
 # Initial eigenvalue configuration
-my_init_radii = [0.9]           # Radii in (0, 1) - one per eigenvalue
+my_init_radii = [0.99]           # Radii in (0, 1) - one per eigenvalue
 my_init_angles = [0.001]        # Angles in (-pi, pi] radians - one per eigenvalue
 
 # Input frequency configuration (normalized: 0-1 where 1 = π radians)

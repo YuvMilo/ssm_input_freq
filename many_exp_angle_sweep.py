@@ -41,7 +41,7 @@ TAKE_REAL = False  # Use complex throughout
 # SSM size and sequence/batch config
 N = 1  # dimension of the SSM (1D for this sweep)
 SEQ_LEN = 64
-BATCH_SIZE = 256
+BATCH_SIZE = 1024
 SHIFT_SIZE = 0
 
 # Training config
@@ -63,7 +63,7 @@ ANGLE_MIN = 0.0  # start angle (radians, will be slightly offset)
 ANGLE_MAX = 2 * np.pi  # end angle (radians, will be slightly offset)
 
 # GIF configuration
-GIF_DURATION = 20  # seconds
+GIF_DURATION = 40  # seconds
 GIF_FPS = NUM_ANGLES / GIF_DURATION
 
 # Loss threshold
@@ -328,6 +328,7 @@ def make_sweep_run_dir(
     num_angles: int,
     loss_threshold: float,
     optimizer_name: str,
+    bc_real: bool = False,
     shift_size: int = 0,
 ) -> str:
     """
@@ -340,8 +341,10 @@ def make_sweep_run_dir(
         return "_".join(fmt.format(v) for v in xs[:k]) + tail
 
     ts = time.strftime("%Y%m%d-%H%M%S")
+    bc_str = "bcReal" if bc_real else "bcCplx"
     dir_name = (
-        f"{run_name_prefix}"
+        f"{bc_str}"
+        f"__{run_name_prefix}"
         f"__n{n}"
         f"__shift{shift_size}"
         f"__freqs_{fmt_list(target_freqs)}"
@@ -566,6 +569,7 @@ def run_angle_sweep_experiment(
         target_frequencies: List of input frequencies. If None, uses [FIXED_INPUT_FREQ]
         loss_threshold: Training stops when loss < this threshold
         optimizer_name: "adam" or "sgd"
+        bc_real: If True, B and C are real-valued; if False, they are complex
         run_name_prefix: Prefix for the run directory name
         ... (other standard training parameters)
         
@@ -586,6 +590,7 @@ def run_angle_sweep_experiment(
     print(f"Input frequencies: {[f'{f}π' for f in target_frequencies]}")
     print(f"Loss threshold: {loss_threshold}")
     print(f"Optimizer: {optimizer_name}")
+    print(f"BC_REAL: {bc_real}")
     
     # Generate angles if not provided
     if angles is None:
@@ -605,6 +610,7 @@ def run_angle_sweep_experiment(
         num_angles=len(angles),
         loss_threshold=loss_threshold,
         optimizer_name=optimizer_name,
+        bc_real=bc_real,
         shift_size=shift_size,
     )
     print(f"Output directory: {run_dir}")
@@ -706,6 +712,7 @@ def run_angle_sweep_experiment(
             'num_angles': len(angles),
             'loss_threshold': loss_threshold,
             'optimizer': optimizer_name,
+            'bc_real': bc_real,
             'shift_size': shift_size,
             'results': results_log,
         }, f, indent=2)
@@ -752,18 +759,21 @@ def run_angle_sweep_experiment(
 
 # %%
 # Example: Custom angle range with explicit angles
-custom_angles = np.linspace(0, 2*np.pi, 50)[1:-1]
+# Run experiments with different radii and both BC_REAL settings
+custom_angles = np.linspace(0+1e-3, np.pi-1e-3, 100)
 
-for rad in [0.9, 0.95, 0.99, 0.999]:
-    result_dir = run_angle_sweep_experiment(
-        angles=custom_angles.tolist(),  # Explicit list of angles
-        loss_threshold=1e-2,            # Tighter convergence
-        n=1,                            # SSM dimension
-        target_frequencies=[0.2],       # Input frequency
-        optimizer_name="sgd",           # Use SGD instead of Adam
-        fixed_radii=[rad],             # Fixed radius
-    )
-    print(f"\nResults directory: {result_dir}")
-    print(f"GIF location: {result_dir}/angle_sweep_animation.gif")
+for rad in [0.95,0.99, 0.9]:
+    for bc_real_val in [True, False]:
+        result_dir = run_angle_sweep_experiment(
+            angles=custom_angles.tolist(),  # Explicit list of angles
+            loss_threshold=8e-3,            # Tighter convergence
+            n=1,                            # SSM dimension
+            target_frequencies=[0.2],       # Input frequency
+            optimizer_name="sgd",           # Use SGD instead of Adam
+            fixed_radii=[rad],              # Fixed radius
+            bc_real=bc_real_val,            # BC_REAL setting
+        )
+        print(f"\nResults directory: {result_dir}")
+        print(f"GIF location: {result_dir}/angle_sweep_animation.gif")
 
 # %%
